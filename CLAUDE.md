@@ -19,7 +19,7 @@ Build and maintain a comprehensive GUI, functional, and regression test suite fo
 | `src/pages/` | Page Object Model classes, one per page or section |
 | `src/fixtures/site.fixture.ts` | Custom Playwright fixtures exposing page objects |
 | `src/utils/` | Helpers: link-checker, visual-helper |
-| `src/types/` | TypeScript interfaces |
+| `src/types/` | TypeScript interfaces (import alias: `@site-types/*`) |
 | `tests/smoke/` | @smoke — availability and basic load tests |
 | `tests/navigation/` | @navigation — nav links, routing, menus |
 | `tests/forms/` | @forms — form fields, validation (no submission) |

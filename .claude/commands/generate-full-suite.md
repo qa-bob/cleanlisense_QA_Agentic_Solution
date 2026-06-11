@@ -1,4 +1,12 @@
-# Generate Full Playwright Test Suite
+# /generate-full-suite
+
+Analyze the live CleanliSense website and generate or refresh the complete
+Playwright POM + test suite. Read `site.config.json` first, then fetch the
+live site HTML, then write/update page objects and tests.
+
+---
+
+# Full Suite Generation — Instructions
 
 You are a QA automation engineer. Your job is to analyze the website defined in `site.config.json` and build a **complete, production-quality Playwright + TypeScript regression test suite** using the Page Object Model (POM).
 

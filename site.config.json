@@ -1,23 +1,27 @@
-﻿{
-    "name":  "CleanliSense",
-    "url":  "https://www.cleanlisense.com",
-    "description":  "",
-    "industry":  "",
-    "hasContactForm":  true,
-    "expectedNavItems":  [
-
-                         ],
-    "viewports":  [
-                      "desktop",
-                      "mobile",
-                      "tablet"
-                  ],
-    "skipVisual":  false,
-    "skipForms":  false,
-    "auth":  {
-                 "required":  false,
-                 "loginUrl":  "",
-                 "username":  "",
-                 "password":  ""
-             }
+{
+    "name": "CleanliSense",
+    "url": "https://www.cleanlisense.com",
+    "description": "B2B SaaS platform for cleaning company operations — scheduling, housekeeper apps, and property management for short-term rental hosts.",
+    "industry": "B2B SaaS / Hospitality Technology",
+    "hasContactForm": true,
+    "expectedNavItems": [
+        "For Cleaning Companies",
+        "For Homeowners",
+        "For Property Managers",
+        "Pricing",
+        "Login"
+    ],
+    "viewports": [
+        "desktop",
+        "mobile",
+        "tablet"
+    ],
+    "skipVisual": false,
+    "skipForms": false,
+    "auth": {
+        "required": false,
+        "loginUrl": "https://app.cleanlisense.com",
+        "username": "",
+        "password": ""
+    }
 }
