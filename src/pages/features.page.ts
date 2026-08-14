@@ -24,15 +24,40 @@ export class FeaturesPage extends BasePage {
     return texts;
   }
 
+  /**
+   * Return true if a section with the given keyword exists on the page.
+   * Searches all heading levels (h1–h6), ElementsKit tab labels,
+   * and section subtitle elements.
+   */
   async hasSection(keyword: string): Promise<boolean> {
-    const section = this.page.locator('h2, h3, h4').filter({
-      hasText: new RegExp(keyword, 'i'),
-    });
-    return (await section.count()) > 0;
+    const re = new RegExp(keyword, 'i');
+
+    // All heading levels
+    const headings = this.page.locator('h1, h2, h3, h4, h5, h6').filter({ hasText: re });
+    if ((await headings.count()) > 0) return true;
+
+    // ElementsKit tab labels (data-ekit-handler-id) and ARIA tabs
+    const tabLabels = this.page.locator('[data-ekit-handler-id], [role="tab"]').filter({ hasText: re });
+    if ((await tabLabels.count()) > 0) return true;
+
+    // ElementsKit section subtitle / title classes
+    const subtitles = this.page.locator(
+      '[class*="subtitle"], [class*="section-title"], [class*="section-heading"]'
+    ).filter({ hasText: re });
+    if ((await subtitles.count()) > 0) return true;
+
+    return false;
   }
 
+  /**
+   * Return integration partner names from image alt attributes.
+   * ElementsKit uses ekit-image-swap wrappers — not [class*="integration"].
+   */
   async getIntegrationNames(): Promise<string[]> {
-    const logoImgs = this.page.locator('[class*="integration"] img, [class*="partner"] img');
+    const logoImgs = this.page.locator(
+      '[class*="integration"] img, [class*="partner"] img, ' +
+      '[class*="ekit-image-swap"] img, [class*="image-swap"] img'
+    );
     const results: string[] = [];
 
     const imgs = await logoImgs.all();

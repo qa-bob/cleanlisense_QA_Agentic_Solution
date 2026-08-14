@@ -1,3 +1,8 @@
+---
+description: Analyze the live CleanliSense site and generate or refresh the complete Playwright + TypeScript POM test suite
+allowed-tools: WebFetch, Read, Write, Bash
+---
+
 # /generate-full-suite
 
 Analyze the live CleanliSense website and generate or refresh the complete

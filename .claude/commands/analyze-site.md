@@ -1,3 +1,8 @@
+---
+description: Crawl a live website and produce a fully-populated site.config.json with discovered nav items, forms, and page structure
+allowed-tools: WebFetch, Read, Write
+---
+
 # /analyze-site
 
 Analyze a live website and produce a fully-populated `site.config.json`.

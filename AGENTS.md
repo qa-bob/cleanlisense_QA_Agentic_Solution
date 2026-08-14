@@ -1,16 +1,44 @@
 # AGENTS.md — Claude Code Sub-Agent Reference
 
-This file documents the sub-agents defined in `.claude/agents/` for this repository.
-Sub-agents are specialized Claude Code processes that handle bounded, repeatable tasks
-within the QA framework. Invoke them via slash commands or by asking Claude to use a
-specific agent by name.
+This file documents every sub-agent defined in `.claude/agents/`. Sub-agents are specialized
+Claude Code processes that handle bounded, repeatable tasks within the QA framework. They
+are invoked via slash commands or explicitly by asking Claude to use a specific agent by name.
+
+---
+
+## How Agents Work
+
+Agents in `.claude/agents/` are instruction files that tell Claude how to behave when
+acting in a specific role. Each file defines:
+
+- The agent's **role** (what job it performs)
+- **When to invoke** it (what triggers it)
+- **Capabilities** it should use
+- Expected **inputs** and **outputs**
+- **Step-by-step instructions** for the task
+
+Claude reads the agent file and follows the instructions as if it were that specialized
+engineer. Agents do not have separate processes or persistent state — they are Claude Code
+operating under a focused set of instructions.
+
+### Invocation Methods
+
+```
+# Via slash command (recommended)
+/analyze-site
+/generate-full-suite
+
+# Via natural language in a Claude Code session
+"use the site-analyzer to check the current nav structure"
+"use the test-generator to add tests for the /features page"
+```
 
 ---
 
 ## site-analyzer
 
 **File:** `.claude/agents/site-analyzer.md`
-**Invoked by:** `/analyze-site`, or ask Claude: _"use the site-analyzer to update site.config.json"_
+**Invoked by:** `/analyze-site`, or: _"use the site-analyzer to update site.config.json"_
 
 ### Role
 
@@ -20,8 +48,8 @@ that reflects the current state of the site.
 ### When to invoke
 
 - Onboarding: generating the initial `site.config.json` for this repo
-- After a site redesign to verify selectors and nav structure are still accurate
-- When the `/analyze-site` slash command is run
+- After a site redesign to verify nav structure and selectors are still accurate
+- When `/analyze-site` is run
 
 ### Capabilities
 
@@ -61,7 +89,7 @@ that reflects the current state of the site.
 ## test-generator
 
 **File:** `.claude/agents/test-generator.md`
-**Invoked by:** `/generate-full-suite`, or ask Claude: _"use the test-generator to add pricing tests"_
+**Invoked by:** `/generate-full-suite`, or: _"use the test-generator to add pricing tests"_
 
 ### Role
 
@@ -72,9 +100,9 @@ shared framework's generic tests.
 ### When to invoke
 
 - A site has unique functionality not covered by the shared suite
-- The client requests coverage of a specific page (e.g., `/pricing`, blog)
+- A specific page needs dedicated coverage (e.g., `/pricing`, `/features`, blog)
 - Writing regression tests for a recently discovered bug
-- Running the `/generate-full-suite` slash command
+- Running `/generate-full-suite`
 
 ### Capabilities
 
@@ -96,7 +124,7 @@ shared framework's generic tests.
 
 ### Output
 
-- TypeScript test files in `tests/functional/<scenario>.spec.ts` (or appropriate category)
+- TypeScript test files in `tests/<category>/<scenario>.spec.ts`
 - Page object additions or new files in `src/pages/`
 - Updated `src/fixtures/site.fixture.ts` if new page objects are added
 - Summary of what was created, updated, and skipped
@@ -114,9 +142,15 @@ shared framework's generic tests.
 ## Adding a New Agent
 
 1. Create `.claude/agents/<name>.md`
-2. Include sections: **Role**, **When to invoke**, **Capabilities**, **Inputs**, **Output**, **Step-by-step**
-3. Reference the agent in this file
-4. If the agent maps to a slash command, document the command in `SKILLS.md` and create `.claude/commands/<name>.md`
+2. Include the required sections:
+   - **Role** — one paragraph describing what this agent does
+   - **When to invoke** — bullet list of triggering conditions
+   - **Capabilities** — what tools and techniques it uses
+   - **Inputs** — table of parameters
+   - **Output** — what it produces and where it goes
+   - **Step-by-step** — numbered instructions Claude follows
+3. Reference the new agent in this file
+4. If it maps to a slash command, document the command in `SKILLS.md` and create `.claude/commands/<name>.md`
 
 ---
 
@@ -129,3 +163,15 @@ shared framework's generic tests.
 | TypeScript | Generated code must compile under `tsc --noEmit` |
 | No side effects | Never submit forms, create accounts, or store credentials |
 | Real selectors | Write selectors from actual page HTML, not generic placeholders |
+| Confidence | Always report a confidence level (High/Medium/Low) and any limitations encountered |
+
+---
+
+## Agent vs. Skill vs. Rule
+
+| Type | File location | When Claude reads it | Purpose |
+|------|--------------|---------------------|---------|
+| Agent | `.claude/agents/*.md` | When invoked by command or natural language | Bounded specialist task with specific inputs/outputs |
+| Skill / Command | `.claude/commands/*.md` | When the user types `/command-name` | Multi-step procedure, may use agents internally |
+| Rule | `.claude/rules/*.md` | Automatically when editing files that match `paths:` | Coding standards for a specific file type |
+| CLAUDE.md | Root `CLAUDE.md` | Every session (always loaded) | Project-wide architecture, conventions, do-not list |

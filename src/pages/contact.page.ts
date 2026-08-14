@@ -48,13 +48,17 @@ export class ContactFormPage extends BasePage {
   // ── Field inspection ─────────────────────────────────────────────────────────
 
   /**
-   * Return metadata about each input/textarea/select inside the contact form.
+   * Return metadata about each user-facing input/textarea/select inside the form.
+   * Excludes hidden inputs, submit/button inputs, and WordPress CF7 internal
+   * honeypot/nonce fields (names beginning with "_wpcf7" or "_wpnonce").
    */
   async getFormFields(): Promise<FormFieldInfo[]> {
     const form = await this.findContactForm();
     if (!form) return [];
 
-    const inputLocator = form.locator('input:not([type="hidden"]):not([type="submit"]):not([type="button"]), textarea, select');
+    const inputLocator = form.locator(
+      'input:not([type="hidden"]):not([type="submit"]):not([type="button"]), textarea, select'
+    );
     const count = await inputLocator.count();
     const fields: FormFieldInfo[] = [];
 
@@ -69,6 +73,16 @@ export class ContactFormPage extends BasePage {
       const required =
         (await el.getAttribute('required')) !== null ||
         (await el.getAttribute('aria-required')) === 'true';
+
+      // Skip CF7 internal honeypot and nonce fields
+      if (name.startsWith('_wpcf7') || name.startsWith('_wpnonce')) continue;
+
+      // Skip CSS-hidden fields (honeypots are often hidden via inline style or a class)
+      const isHidden = await el.evaluate<boolean>((node) => {
+        const style = window.getComputedStyle(node as Element);
+        return style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0';
+      });
+      if (isHidden) continue;
 
       fields.push({ name, type, required });
     }

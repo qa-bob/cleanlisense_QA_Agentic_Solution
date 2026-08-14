@@ -1,8 +1,38 @@
 # SKILLS.md — Slash Command Reference
 
-This file documents all slash commands (skills) available in this repository when
-running Claude Code. Slash commands are defined in `.claude/commands/` and invoked
-by typing `/command-name` in a Claude Code session.
+This file documents all slash commands (skills) available in this repository.
+Commands are defined in `.claude/commands/` and invoked by typing `/command-name`
+in a Claude Code session.
+
+---
+
+## How Skills Work
+
+Each file in `.claude/commands/` becomes a `/command-name` you can type in Claude Code.
+The filename (without `.md`) is the command name.
+
+Every command file starts with a YAML frontmatter block:
+
+```yaml
+---
+description: One-line description — Claude uses this to decide when to auto-invoke the command
+allowed-tools: WebFetch, Read, Write, Bash
+---
+```
+
+**`description`** — Claude reads this field to decide whether to auto-invoke the command
+when the user's request matches. Keep it specific enough to avoid false positives.
+
+**`allowed-tools`** — Tools pre-approved for this command. Claude won't prompt for permission
+to use these tools when the command is running. Only list tools the command actually needs.
+
+### Creating a new skill
+
+1. Create `.claude/commands/<name>.md`
+2. Add the YAML frontmatter with `description:` and `allowed-tools:`
+3. Write the body: **Usage**, **What it does** (numbered steps), **When to use**
+4. Add an entry to this file
+5. If the skill relies on a sub-agent, reference that agent in `AGENTS.md`
 
 ---
 
@@ -10,6 +40,7 @@ by typing `/command-name` in a Claude Code session.
 
 **File:** `.claude/commands/analyze-site.md`
 **Agent:** `site-analyzer`
+**Allowed tools:** `WebFetch`, `Read`, `Write`
 
 Crawl the live CleanliSense site and produce a refreshed `site.config.json`.
 
@@ -40,6 +71,7 @@ After a site redesign, or to validate that `site.config.json` reflects the curre
 
 **File:** `.claude/commands/generate-full-suite.md`
 **Agent:** `test-generator`
+**Allowed tools:** `WebFetch`, `Read`, `Write`, `Bash`
 
 Analyze the live site and generate the complete POM + test suite.
 
@@ -70,6 +102,7 @@ Initial setup or after a major site overhaul requiring fresh test generation.
 ## /run-smoke
 
 **File:** `.claude/commands/run-smoke.md`
+**Allowed tools:** `Bash`, `Read`
 
 Run the `@smoke` test suite and report results.
 
@@ -81,9 +114,11 @@ Run the `@smoke` test suite and report results.
 
 ### What it does
 
-1. Executes `npx playwright test --grep @smoke`
-2. Parses `test-results/results.json`
-3. Reports pass/fail counts and details of any failures
+1. Runs `bash .claude/hooks/pre-test.sh` to verify site is reachable
+2. Executes `npm run test:smoke`
+3. Parses `test-results/results.json`
+4. Displays a formatted pass/fail table with duration per test
+5. For failures, shows the error message and a suggested fix
 
 ### When to use
 
@@ -94,6 +129,7 @@ Quick health check before a deeper test run, or after any site deployment.
 ## /update-baseline
 
 **File:** `.claude/commands/update-baseline.md`
+**Allowed tools:** `Bash`, `Read`
 
 Refresh visual regression baseline screenshots.
 
@@ -105,20 +141,24 @@ Refresh visual regression baseline screenshots.
 
 ### What it does
 
-1. Runs `npx playwright test --grep @visual --update-snapshots`
-2. Reports which baselines were updated (desktop, mobile, tablet)
-3. Reminds you to commit the new snapshot files in `__snapshots__/`
+1. Runs `npm run baseline` (`playwright test --grep @visual --update-snapshots`)
+2. Lists all updated files by diffing `__snapshots__/` against git
+3. Reminds you to review the screenshots visually before committing
 
 ### When to use
 
 After intentional design changes that alter the visual appearance of the site.
 Visual baselines are OS-specific — always run this command on Windows if the CI runs on Windows.
 
+**Important:** Run `npm run baseline` locally; do not run it in CI. Committing baselines
+generated on a different OS will cause visual tests to fail on other machines.
+
 ---
 
 ## /generate-report
 
 **File:** `.claude/commands/generate-report.md`
+**Allowed tools:** `Read`, `Bash`
 
 Generate a human-readable test results summary from the last test run.
 
@@ -134,19 +174,11 @@ Generate a human-readable test results summary from the last test run.
 2. Summarizes pass/fail counts by tag (`@smoke`, `@functional`, etc.) and browser project
 3. Lists failing tests with their error messages
 4. Identifies flaky tests (passed on retry)
+5. Suggests next steps (re-run, update baseline, investigate flaky tests)
 
 ### When to use
 
 After a full test run to produce a summary for the team or stakeholders.
-
----
-
-## Adding a New Skill
-
-1. Create `.claude/commands/<name>.md`
-2. Define: **Usage**, **What it does** (numbered steps), **When to use**
-3. Add an entry to this file
-4. If the skill relies on a sub-agent, reference it in `AGENTS.md`
 
 ---
 
@@ -159,3 +191,16 @@ After a full test run to produce a summary for the team or stakeholders.
 | Compile check | Run `npx tsc --noEmit` before reporting any code changes as complete |
 | No side effects | Never submit forms or commit changes without user confirmation |
 | Tagging | All generated tests tagged with at least one `@tag` |
+| Pre-test hook | Run `bash .claude/hooks/pre-test.sh` before any test execution to verify the site is reachable |
+
+---
+
+## Skill vs. Agent vs. Rule
+
+| Type | Invoked by | Purpose |
+|------|-----------|---------|
+| Skill (command) | User typing `/command-name` | Multi-step procedure the user triggers explicitly |
+| Agent | Skill or natural language | Bounded specialist: one well-defined job with defined inputs/outputs |
+| Rule | Editing a matching file | Background coding standards; no user action needed |
+
+See [AGENTS.md](./AGENTS.md) for the full agent catalog.

@@ -20,8 +20,12 @@ export class PricingPage extends BasePage {
     return byContent.all();
   }
 
+  /**
+   * Return plan heading texts (Start, Pro, Elite, etc.).
+   * Expands search to h1–h4 to handle varied Elementor layouts.
+   */
   async getPlanHeadings(): Promise<string[]> {
-    const headings = this.page.locator('h2, h3').filter({
+    const headings = this.page.locator('h1, h2, h3, h4').filter({
       hasText: /start|pro|elite|basic|standard|premium/i,
     });
     const all = await headings.all();
@@ -47,12 +51,25 @@ export class PricingPage extends BasePage {
     return dollarText;
   }
 
+  /**
+   * Return the free trial / registration CTA link, or null if not found.
+   * Scrolls into view to trigger any Elementor scroll-reveal animations
+   * that would otherwise cause toBeVisible() to time out.
+   */
   async getStartTrialLink(): Promise<Locator | null> {
     const link = this.page.locator('a').filter({
-      hasText: /start.*free trial|30.day.*free|free trial/i,
+      hasText: /start.*free trial|30.day.*free|free trial|join.*cleaning|join.*host/i,
     }).first();
-    if (await link.count() > 0) return link;
-    return null;
+    if (await link.count() === 0) return null;
+
+    // Scroll into view — Elementor pages often use reveal animations
+    try {
+      await link.scrollIntoViewIfNeeded({ timeout: 3000 });
+    } catch {
+      // Ignore — element may not need scrolling
+    }
+
+    return link;
   }
 
   async isLoaded(): Promise<boolean> {

@@ -1,3 +1,8 @@
+---
+description: Parse the last Playwright test run and display a structured summary by tag with failures, flaky tests, and next steps
+allowed-tools: Read, Bash
+---
+
 # /generate-report
 
 Open the Playwright HTML report and display a structured summary of test results.

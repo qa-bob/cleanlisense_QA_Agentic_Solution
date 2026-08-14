@@ -2,7 +2,8 @@
  * src/pages/navigation.page.ts
  *
  * NavigationPage models the site's primary navigation.
- * Uses semantic role-based selectors and avoids site-specific class names.
+ * Uses semantic role-based selectors and avoids site-specific class names
+ * where possible, with ElementsKit-aware fallbacks.
  */
 
 import { type Locator } from '@playwright/test';
@@ -24,17 +25,33 @@ export class NavigationPage extends BasePage {
 
   /**
    * Return the primary navigation locator.
-   * Tries role="navigation" first, then <nav>, then header-scoped links.
+   * Prefers header-scoped nav, then nav with menu-related classes, then any nav.
    */
   private getNavLocator(): Locator {
-    return this.page.locator('nav, [role="navigation"]').first();
+    return this.page.locator(
+      'header nav, nav[class*="menu"], nav[class*="ekit"], nav, [role="navigation"]'
+    ).first();
   }
 
-  /** Return true if a navigation element is visible on the page. */
+  /**
+   * Return true if a navigation element (or its hamburger toggle) is present on the page.
+   * On mobile/tablet, ElementsKit collapses the nav — hamburger presence counts as "nav visible".
+   */
   async isNavVisible(): Promise<boolean> {
-    const nav = this.getNavLocator();
-    if (await nav.count() === 0) return false;
-    return nav.isVisible();
+    // Hamburger toggle visible → nav exists in collapsed state (mobile/tablet)
+    const hamburger = this.page.locator(
+      '[aria-label="hamburger-icon"], [class*="hamburger"][class*="toggler"], [class*="hamburger"][class*="toggle"]'
+    ).first();
+    if (await hamburger.count() > 0 && await hamburger.isVisible()) return true;
+
+    // Desktop: check for any visible link inside the header or nav
+    const headerLinks = this.page.locator('header a[href], nav a[href]');
+    const count = await headerLinks.count();
+    for (let i = 0; i < Math.min(count, 5); i++) {
+      if (await headerLinks.nth(i).isVisible()) return true;
+    }
+
+    return false;
   }
 
   // ── Nav links ────────────────────────────────────────────────────────────────
@@ -42,12 +59,19 @@ export class NavigationPage extends BasePage {
   /**
    * Return all links inside the primary navigation with their text and href.
    * Filters out empty hrefs and anchor-only links (#).
+   * Falls back to ElementsKit-specific containers if the generic nav selector yields nothing.
    */
   async getNavLinks(): Promise<NavLinkInfo[]> {
     const nav = this.getNavLocator();
-    if (await nav.count() === 0) return [];
+    let links = nav.locator('a[href]');
 
-    const links = nav.locator('a[href]');
+    // If the nav locator found nothing useful, try ElementsKit-specific containers
+    if (await links.count() === 0) {
+      links = this.page.locator(
+        '.elementskit-menu-container a[href], #ekit-megamenu-main-menu a[href], header a[href]'
+      );
+    }
+
     const count = await links.count();
     const results: NavLinkInfo[] = [];
 
@@ -80,15 +104,18 @@ export class NavigationPage extends BasePage {
 
   /**
    * Return the mobile hamburger / menu toggle locator, or null if not found.
-   * Searches for common patterns: button with aria-label containing "menu",
-   * elements with class containing "hamburger", "menu-toggle", "nav-toggle".
+   * ElementsKit uses aria-label="hamburger-icon" with class elementskit-menu-toggler.
    */
   async getMobileMenuToggle(): Promise<Locator | null> {
     const candidates = [
+      // ElementsKit-specific (most precise)
+      this.page.locator('[aria-label="hamburger-icon"]'),
+      this.page.locator('[class*="hamburger"][class*="toggler"]'),
+      // Generic fallbacks
       this.page.getByRole('button', { name: /menu|navigation|toggle|hamburger/i }),
       this.page.locator('[class*="hamburger"], [class*="menu-toggle"], [class*="nav-toggle"]'),
-      this.page.locator('[aria-label*="menu" i], [aria-label*="navigation" i]').filter({ hasNotText: /^\s*$/ }),
-      this.page.locator('button[aria-expanded]').first(),
+      this.page.locator('[aria-label*="menu" i], [aria-label*="navigation" i]'),
+      this.page.locator('button[aria-expanded]'),
     ];
 
     for (const candidate of candidates) {
@@ -102,7 +129,7 @@ export class NavigationPage extends BasePage {
 
   /**
    * Open the mobile navigation menu if a toggle exists and the menu is currently closed.
-   * No-op if no toggle is found (desktop layout).
+   * Waits for the menu container to become visible after clicking.
    */
   async openMobileMenu(): Promise<void> {
     const toggle = await this.getMobileMenuToggle();
@@ -113,8 +140,15 @@ export class NavigationPage extends BasePage {
 
     await toggle.click();
 
-    // Wait briefly for animation
-    await this.page.waitForTimeout(400);
+    // Wait for the ElementsKit menu container to animate in
+    const menuContainer = this.page.locator(
+      '.elementskit-menu-container, #ekit-megamenu-main-menu, [class*="menu-container"]'
+    ).first();
+    if (await menuContainer.count() > 0) {
+      await menuContainer.waitFor({ state: 'visible', timeout: 3000 }).catch(() => null);
+    } else {
+      await this.page.waitForTimeout(400);
+    }
   }
 
   // ── Link reachability ────────────────────────────────────────────────────────
