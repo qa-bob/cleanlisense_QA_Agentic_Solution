@@ -136,10 +136,7 @@ test.describe('Contact Form @forms', () => {
     // getFormFields() already excludes CF7 honeypots (_wpcf7*) and CSS-hidden fields
     const fields = await contactPage.getFormFields();
 
-    if (fields.length === 0) {
-      console.warn('[forms] No visible user-facing fields found after filtering CF7 internals.');
-      return;
-    }
+    test.skip(fields.length === 0, 'No visible user-facing fields found after filtering CF7 internals');
 
     const unlabeledFields: string[] = [];
 
@@ -203,12 +200,19 @@ test.describe('Contact Form @forms', () => {
           if (await submitBtn.count() > 0 && await submitBtn.isVisible()) {
             foundForm = true;
 
-            // Intercept full-page POST navigation
-            let navigationTriggered = false;
-            page.on('request', (req) => {
-              if (req.resourceType() === 'document' && req.method() === 'POST') {
-                navigationTriggered = true;
+            // Block every non-GET request so nothing can actually be submitted, even
+            // if the form posts via fetch/XHR (CF7 uses AJAX) or validation is missing.
+            const submissionAttempts: string[] = [];
+            const navigationAttempts: string[] = [];
+            await page.route('**/*', async (route) => {
+              const req = route.request();
+              if (req.method() !== 'GET' && req.method() !== 'HEAD') {
+                submissionAttempts.push(`${req.method()} ${req.url()}`);
+                if (req.isNavigationRequest()) navigationAttempts.push(`${req.method()} ${req.url()}`);
+                await route.abort();
+                return;
               }
+              await route.continue();
             });
 
             // Use evaluate to dispatch submit — avoids Playwright's actionability checks
@@ -217,9 +221,9 @@ test.describe('Contact Form @forms', () => {
             await page.waitForTimeout(600);
 
             expect(
-              navigationTriggered,
+              navigationAttempts,
               'Empty CF7 form submit should NOT trigger a full-page POST navigation'
-            ).toBeFalsy();
+            ).toHaveLength(0);
 
             // CF7 shows .wpcf7-not-valid-tip on invalid fields after AJAX validation
             const cf7Errors = page.locator('.wpcf7-not-valid-tip, .wpcf7-validation-errors');
@@ -240,11 +244,9 @@ test.describe('Contact Form @forms', () => {
       }
     }
 
-    if (!foundForm) {
-      console.warn(
-        '[forms] No contact page with a visible CF7 submit button found at /contact, /contact-us, /get-in-touch. ' +
-          'Skipping validation check.'
-      );
-    }
+    test.skip(
+      !foundForm,
+      'No contact page with a visible CF7 submit button found at /contact, /contact-us, /get-in-touch'
+    );
   });
 });

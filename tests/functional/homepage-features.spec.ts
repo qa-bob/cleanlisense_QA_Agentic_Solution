@@ -113,10 +113,7 @@ test.describe('Homepage Features @functional', () => {
     const loginLink = page.locator('a').filter({ hasText: /login|log in|sign in/i }).first();
     const count = await loginLink.count();
 
-    if (count === 0) {
-      console.warn('[homepage-features] No Login link found on the page.');
-      return;
-    }
+    test.skip(count === 0, 'No Login link found on the page');
 
     // On some viewports (tablet) the login button is inside the collapsed hamburger menu
     const isVisible = await loginLink.isVisible().catch(() => false);
@@ -133,7 +130,7 @@ test.describe('Homepage Features @functional', () => {
 
   test('Login link points to the app subdomain @functional', async ({ page }) => {
     const loginLink = page.locator('a').filter({ hasText: /login|log in|sign in/i }).first();
-    if ((await loginLink.count()) === 0) return;
+    test.skip((await loginLink.count()) === 0, 'No Login link found on the page');
 
     const href = await loginLink.getAttribute('href');
     expect(href, 'Login link should have a non-empty href').toBeTruthy();
@@ -153,10 +150,7 @@ test.describe('Homepage Features @functional', () => {
     const pricingLink = page.locator('a').filter({ hasText: /pricing/i }).first();
     const count = await pricingLink.count();
 
-    if (count === 0) {
-      console.warn('[homepage-features] No "Pricing" link found on the page.');
-      return;
-    }
+    test.skip(count === 0, 'No "Pricing" link found on the page');
 
     // On tablet, the pricing link may be inside the collapsed hamburger nav
     const isVisible = await pricingLink.isVisible().catch(() => false);

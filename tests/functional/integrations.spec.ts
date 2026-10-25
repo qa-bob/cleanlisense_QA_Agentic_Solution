@@ -96,10 +96,7 @@ test.describe('Integrations Section @functional', () => {
     );
     const count = await integrationImgs.count();
 
-    if (count === 0) {
-      console.warn('[integrations] No integration images found — logos may use a different class.');
-      return;
-    }
+    test.skip(count === 0, 'No integration images found');
 
     const missingAlt: string[] = [];
     for (let i = 0; i < count; i++) {
