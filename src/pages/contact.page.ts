@@ -69,7 +69,7 @@ export class ContactFormPage extends BasePage {
         (await el.getAttribute('id')) ??
         (await el.getAttribute('placeholder')) ??
         `field-${i}`;
-      const type = (await el.getAttribute('type')) ?? (await el.evaluate<string>((node) => node.tagName.toLowerCase()));
+      const type = (await el.getAttribute('type')) ?? (await el.evaluate((node) => node.tagName.toLowerCase()));
       const required =
         (await el.getAttribute('required')) !== null ||
         (await el.getAttribute('aria-required')) === 'true';
@@ -78,7 +78,7 @@ export class ContactFormPage extends BasePage {
       if (name.startsWith('_wpcf7') || name.startsWith('_wpnonce')) continue;
 
       // Skip CSS-hidden fields (honeypots are often hidden via inline style or a class)
-      const isHidden = await el.evaluate<boolean>((node) => {
+      const isHidden = await el.evaluate((node) => {
         const style = window.getComputedStyle(node as Element);
         return style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0';
       });

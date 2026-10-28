@@ -114,7 +114,7 @@ test.describe('Pricing Page @functional', () => {
 
     // Check the element exists in the DOM (not display:none / visibility:hidden)
     // Elementor scroll-reveal sections may not be in the viewport yet
-    const isHidden = await trialLink.evaluate<boolean>((el) => {
+    const isHidden = await trialLink.evaluate((el) => {
       const style = window.getComputedStyle(el as Element);
       return style.display === 'none' || style.visibility === 'hidden';
     });
